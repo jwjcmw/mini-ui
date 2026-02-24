@@ -16,7 +16,8 @@ export default function App() {
 
   const respond = useCallback((id: string, result: unknown) => {
     wsRef.current?.send(JSON.stringify({ id, result }));
-    setCommand(null);
+    // Close the window after responding — next interaction will reopen it
+    setTimeout(() => window.close(), 150);
   }, []);
 
   useEffect(() => {

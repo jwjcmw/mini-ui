@@ -5,7 +5,7 @@
   "type": "module",
   "main": "dist/server/index.js",
   "scripts": {
-    "dev": "concurrently -n ui,mcp \"vite\" \"tsx server/index.ts\"",
+    "dev": "vite",
     "dev:ui": "vite",
     "dev:server": "tsx server/index.ts",
     "build": "vite build && tsc -p tsconfig.server.json",

@@ -1,6 +1,7 @@
 import { spawn, ChildProcess } from "child_process";
 import path from "path";
 import { fileURLToPath } from "url";
+import { isUiConnected, waitForConnection } from "./wsServer.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -14,7 +15,7 @@ interface WindowOptions {
 export async function ensureWindow(opts: WindowOptions = {}): Promise<void> {
   if (electronProc && !electronProc.killed) return;
 
-  const electronEntry = path.resolve(__dirname, "electron-main.ts");
+  const electronEntry = path.resolve(__dirname, "../electron-main.cjs");
   const env = {
     ...process.env,
     MINI_UI_TITLE: opts.title ?? "mini-ui",
@@ -35,8 +36,8 @@ export async function ensureWindow(opts: WindowOptions = {}): Promise<void> {
     electronProc = null;
   });
 
-  // Give Electron a moment to start and connect
-  await new Promise((r) => setTimeout(r, 1500));
+  // Wait until the UI actually connects over WebSocket (up to 8s)
+  await waitForConnection(8000);
 }
 
 export function closeWindow(): void {

@@ -5,7 +5,14 @@ const PORT = 9999;
 
 let wss: WebSocketServer | null = null;
 let activeSocket: WebSocket | null = null;
-const pending = new Map<string, (result: unknown) => void>();
+const pending = new Map<string, { resolve: (result: unknown) => void; reject: (err: Error) => void }>();
+
+function rejectAllPending(reason: string) {
+  for (const { reject } of pending.values()) {
+    reject(new Error(reason));
+  }
+  pending.clear();
+}
 
 export function startWsServer(): void {
   if (wss) return;
@@ -18,10 +25,10 @@ export function startWsServer(): void {
     socket.on("message", (raw) => {
       try {
         const msg = JSON.parse(raw.toString());
-        const resolve = pending.get(msg.id);
-        if (resolve) {
+        const entry = pending.get(msg.id);
+        if (entry) {
           pending.delete(msg.id);
-          resolve(msg.result);
+          entry.resolve(msg.result);
         }
       } catch {
         // ignore malformed messages
@@ -29,7 +36,17 @@ export function startWsServer(): void {
     });
 
     socket.on("close", () => {
-      if (activeSocket === socket) activeSocket = null;
+      if (activeSocket === socket) {
+        activeSocket = null;
+        rejectAllPending("UI window was closed");
+      }
+    });
+
+    socket.on("error", () => {
+      if (activeSocket === socket) {
+        activeSocket = null;
+        rejectAllPending("UI connection error");
+      }
     });
   });
 }
@@ -46,7 +63,7 @@ export function sendAndWait<T = unknown>(
     }
 
     const id = randomUUID();
-    pending.set(id, resolve as (v: unknown) => void);
+    pending.set(id, { resolve: resolve as (v: unknown) => void, reject });
 
     activeSocket.send(JSON.stringify({ id, tool, params }));
   });
@@ -65,4 +82,22 @@ export function sendFire(
 
 export function isUiConnected(): boolean {
   return activeSocket !== null && activeSocket.readyState === WebSocket.OPEN;
+}
+
+/** Wait until a UI client connects (or timeout). */
+export function waitForConnection(timeoutMs = 8000): Promise<void> {
+  if (isUiConnected()) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const deadline = setTimeout(() => {
+      wss?.off("connection", onConn);
+      reject(new Error("Timed out waiting for UI to connect"));
+    }, timeoutMs);
+
+    const onConn = () => {
+      clearTimeout(deadline);
+      resolve();
+    };
+
+    wss?.once("connection", onConn);
+  });
 }
