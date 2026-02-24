@@ -1,3 +1,5 @@
+> ⚠️ **This is AI-generated code.** It is experimental and provided as-is. Use at your own risk.
+
 # mini-ui-mcp
 
 A lightweight, chromeless Electron window that AI coding agents can drive via MCP to display rich UI interactions — confirmations, selection lists, forms, and more — without leaving the terminal.
