@@ -54,7 +54,14 @@ export default function App() {
   const { id, tool, params } = command;
 
   return (
-    <div className="min-h-screen bg-zinc-900/95 rounded-xl border border-zinc-800 shadow-2xl overflow-hidden animate-in">
+    <div className="min-h-screen bg-zinc-900/95 rounded-xl border border-zinc-800 shadow-2xl overflow-hidden animate-in relative">
+      <button
+        onClick={() => window.close()}
+        className="absolute top-3 right-3 z-50 w-6 h-6 flex items-center justify-center rounded-full text-zinc-500 hover:text-zinc-200 hover:bg-zinc-700/60 transition-colors text-sm leading-none"
+        title="Close"
+      >
+        ✕
+      </button>
       {tool === "ui_confirm" && (
         <Confirm params={params} onResult={(r) => respond(id, r)} />
       )}
